@@ -20,13 +20,32 @@ fi
 
 declare -A RESULT
 
+install_hwi() {
+  local venv="$1"
+  local cbor_ver="$2"
+
+  if "$venv/bin/pip" install "hwi==3.2.0" "cbor2==$cbor_ver" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  echo "hwi==3.2.0 wheel unavailable for this Python; falling back to source install" >&2
+  local src="$ROOT/.hwi-src"
+  rm -rf "$src"
+  git clone --depth 1 --branch 3.2.0 https://github.com/bitcoin-core/HWI.git "$src" >/dev/null
+
+  PIP_IGNORE_REQUIRES_PYTHON=1 "$venv/bin/pip" install --no-deps "$src" >/dev/null
+  "$venv/bin/pip" install \
+    "cbor2==$cbor_ver" \
+    ecdsa hidapi libusb1 mnemonic noiseprotocol "protobuf<5" pyaes semver typing-extensions pyserial >/dev/null
+}
+
 for v in "${CBOR_VERSIONS[@]}"; do
   for m in "${MODES[@]}"; do
     venv="$ROOT/.venv-matrix-${v//./_}-${m}"
     rm -rf "$venv"
     python3 -m venv "$venv"
     "$venv/bin/pip" install --upgrade pip >/dev/null
-    "$venv/bin/pip" install "hwi==3.2.0" "cbor2==$v" >/dev/null
+    install_hwi "$venv" "$v"
 
     set +e
     output="$($venv/bin/python "$ROOT/repro.py" --$m 2>&1)"
@@ -44,6 +63,8 @@ for v in "${CBOR_VERSIONS[@]}"; do
     printf "[%s cbor2=%s] %s\n" "$m" "$v" "$cell"
   done
 done
+
+rm -rf "$ROOT/.hwi-src"
 
 echo
 echo "| mode \\ cbor2 | 5.7.1 | 5.8.0 | 5.9.0 |"

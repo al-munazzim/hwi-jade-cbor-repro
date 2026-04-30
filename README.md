@@ -35,7 +35,8 @@ This runs `repro.py` across:
 - cbor2: `5.7.1`, `5.8.0`, `5.9.0`
 - modes: `stock`, `patched`
 
-It creates fresh per-cell virtualenvs, installs `hwi==3.2.0` + `cbor2==<version>`, runs the repro, and prints a 2x3 PASS/FROZEN/ERROR markdown table.
+It creates fresh per-cell virtualenvs and tries to install `hwi==3.2.0` + `cbor2==<version>`.
+If the wheel is unavailable for your Python (for example Python 3.13), it automatically falls back to installing HWI 3.2.0 from source in that venv, then runs the repro and prints a 2x3 PASS/FROZEN/ERROR markdown table.
 
 Preview only:
 
