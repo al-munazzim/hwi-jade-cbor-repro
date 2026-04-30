@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hwi-jade-cbor-repro"
+version = "0.1.0"
+description = "Minimal repro and candidate patch for HWI Jade + cbor2>=5.8.0 read regression"
+readme = "README.md"
+requires-python = ">=3.9,<3.13"
+dependencies = [
+  "hwi==3.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.4,<9",
+]
