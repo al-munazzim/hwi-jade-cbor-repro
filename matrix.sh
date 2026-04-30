@@ -7,17 +7,40 @@ CBOR_VERSIONS=(5.7.1 5.8.0 5.9.0)
 MODES=(stock patched)
 LOG_DIR="$ROOT/matrix-logs"
 
+pick_python() {
+  for cand in python3.12 python3.11 python3.10 python3.9 python3; do
+    if command -v "$cand" >/dev/null 2>&1; then
+      if "$cand" - <<'PY' >/dev/null 2>&1
+import sys
+raise SystemExit(0 if (3,9) <= sys.version_info[:2] < (3,13) else 1)
+PY
+      then
+        echo "$cand"
+        return 0
+      fi
+    fi
+  done
+  return 1
+}
+
+PYTHON_BIN="<auto>"
 if [[ "$DRY_RUN" == "--dry-run" ]]; then
   echo "Plan:"
   for v in "${CBOR_VERSIONS[@]}"; do
     for m in "${MODES[@]}"; do
       echo "- cbor2==$v mode=$m"
-      echo "  create .venv-matrix-${v//./_}-${m}, install hwi==3.2.0 cbor2==$v"
+      echo "  create .venv-matrix-${v//./_}-${m} using ${PYTHON_BIN}, install hwi==3.2.0 cbor2==$v"
       echo "  run: python repro.py --$m"
       echo "  log: matrix-logs/${m}-cbor2-${v}.log"
     done
   done
   exit 0
+fi
+
+if ! PYTHON_BIN="$(pick_python)"; then
+  echo "ERROR: Need Python >=3.9,<3.13 (HWI 3.2.0 requirement)." >&2
+  echo "Install python3.12 (recommended) and rerun ./matrix.sh" >&2
+  exit 2
 fi
 
 declare -A RESULT
@@ -48,13 +71,13 @@ for v in "${CBOR_VERSIONS[@]}"; do
     venv="$ROOT/.venv-matrix-${v//./_}-${m}"
     log="$LOG_DIR/${m}-cbor2-${v}.log"
     rm -rf "$venv"
-    python3 -m venv "$venv"
+    "$PYTHON_BIN" -m venv "$venv"
     "$venv/bin/pip" install --upgrade pip >/dev/null
 
     set +e
     {
       install_hwi "$venv" "$v"
-      "$venv/bin/python" "$ROOT/repro.py" --$m
+      PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python "$venv/bin/python" "$ROOT/repro.py" --$m
     } >"$log" 2>&1
     code=$?
     set -e

@@ -27,6 +27,8 @@ So downstreams that need secure `cbor2` lose Jade unless HWI is fixed.
 
 ## 3) Run the matrix (Jade attached)
 
+Use Python `>=3.9,<3.13` (recommended: `3.12`).
+
 ```bash
 ./matrix.sh
 ```
@@ -37,6 +39,8 @@ This runs `repro.py` across:
 
 It creates fresh per-cell virtualenvs and tries to install `hwi==3.2.0` + `cbor2==<version>`.
 If the wheel is unavailable for your Python (for example Python 3.13), it automatically falls back to installing HWI 3.2.0 from source in that venv, then runs the repro and prints a 2x3 PASS/FROZEN/ERROR markdown table.
+
+On Python 3.14, HWI transitive deps (notably protobuf stack used by BitBox modules) are currently incompatible, so `matrix.sh` now auto-selects an installed Python in the supported range (`3.9`-`3.12`) and exits with a clear error if none is available.
 
 Per-cell output is saved under `matrix-logs/` and each line prints the log path. On `ERROR`, `matrix.sh` also prints a tail of the failing log.
 
