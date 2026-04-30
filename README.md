@@ -38,6 +38,8 @@ This runs `repro.py` across:
 It creates fresh per-cell virtualenvs and tries to install `hwi==3.2.0` + `cbor2==<version>`.
 If the wheel is unavailable for your Python (for example Python 3.13), it automatically falls back to installing HWI 3.2.0 from source in that venv, then runs the repro and prints a 2x3 PASS/FROZEN/ERROR markdown table.
 
+Per-cell output is saved under `matrix-logs/` and each line prints the log path. On `ERROR`, `matrix.sh` also prints a tail of the failing log.
+
 Preview only:
 
 ```bash
