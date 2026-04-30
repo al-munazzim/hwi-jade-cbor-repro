@@ -37,6 +37,8 @@ This runs `repro.py` across:
 - cbor2: `5.7.1`, `5.8.0`, `5.9.0`
 - modes: `stock`, `patched`
 
+If Jade is present but locked, `repro.py` prints `JADE LOCKED; exiting ...` and exits 0 so the harness stays runnable while you unlock and retry.
+
 It creates fresh per-cell virtualenvs and tries to install `hwi==3.2.0` + `cbor2==<version>`.
 If the wheel is unavailable for your Python (for example Python 3.13), it automatically falls back to installing HWI 3.2.0 from source in that venv, then runs the repro and prints a 2x3 PASS/FROZEN/ERROR markdown table.
 

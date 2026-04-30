@@ -77,3 +77,15 @@ def test_patched_read_is_prompt_for_large_request():
 
     assert out == b"xyz"
     assert elapsed < 0.05
+
+
+def test_patched_small_reads_keep_exact_length_behavior():
+    patch.apply()
+    iface = _make_interface(b"abcdef")
+
+    start = time.monotonic()
+    out = iface.read(11)
+    elapsed = time.monotonic() - start
+
+    assert out == b""
+    assert elapsed >= 0.14

@@ -23,10 +23,11 @@ def _available_now(impl) -> int | None:
 def apply() -> None:
     """Patch HWI's JadeInterface.read to avoid large blocking reads.
 
-    cbor2>=5.8 may call read(4096). Passing that directly into pyserial blocks
-    until all bytes (or timeout), which stalls Jade even though only a short
-    frame is ready. We ask for currently buffered bytes (or 1 byte fallback),
-    return promptly, and let the decoder pull again as needed.
+    cbor2>=5.8 may request a large buffered read (e.g. 4096). Passing that
+    straight to pyserial blocks for full-length reads and stalls Jade.
+
+    Important: small reads are framing-critical for cbor decoding and should
+    remain exact-length requests. Only clamp obviously buffered large reads.
     """
     from hwilib.devices.jadepy.jade import JadeInterface
 
@@ -37,11 +38,14 @@ def apply() -> None:
         logger.debug("Reading %s bytes...", n)
 
         want = max(1, int(n))
-        available = _available_now(self.impl)
-        if isinstance(available, int) and available > 0:
-            want = min(want, available)
-        elif want > 1:
-            want = 1
+
+        # Preserve exact semantics for normal protocol-sized reads.
+        if want >= 256:
+            available = _available_now(self.impl)
+            if isinstance(available, int) and available > 0:
+                want = min(want, available)
+            else:
+                want = 1
 
         data = self.impl.read(want)
         logger.debug("Received: %s bytes", len(data))

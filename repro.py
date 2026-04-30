@@ -9,6 +9,7 @@ import sys
 from contextlib import contextmanager
 
 from hwilib import commands
+from hwilib.errors import DeviceNotReadyError
 
 CANNED_PSBT = (
     "cHNidP8BAHUCAAAAASaBcTce3/KF6Tet7qSze3gADAVmy7OtZGQXE8pCFxv2AAAAAAD+////"
@@ -70,7 +71,11 @@ def main() -> int:
         print("NO JADE; exiting")
         return 0
 
-    client = commands.get_client(jade["type"], jade["path"])
+    try:
+        client = commands.get_client(jade["type"], jade["path"])
+    except DeviceNotReadyError as exc:
+        print(f"JADE LOCKED; exiting ({exc})")
+        return 0
     if client is None:
         print("ERROR could not open Jade client")
         return 1
