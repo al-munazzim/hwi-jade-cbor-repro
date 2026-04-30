@@ -1,6 +1,17 @@
 # hwi-jade-cbor-repro
 
-Minimal testbed for the HWI Jade regression triggered by `cbor2>=5.8.0`, plus a candidate patch suitable for upstream HWI.
+Minimal testbed for the HWI Jade regression observed with `cbor2==5.8.0`, plus a candidate patch suitable for upstream HWI.
+
+## Latest captured result
+
+Run against HWI 3.2.0 on macOS 15.4.1 with an unlocked temporary Jade signer:
+
+| mode \ cbor2 | 5.7.1 | 5.8.0 | 5.9.0 |
+|---|---|---|---|
+| stock | PASS | FROZEN | PASS |
+| patched | PASS | PASS | PASS |
+
+Full raw output and environment notes are in `results.md`.
 
 ## 1) The bug
 
@@ -13,7 +24,9 @@ def read(self, n):
 ```
 
 `self.impl` usually wraps pyserial. `pyserial.Serial.read(n)` waits for up to `n` bytes (or timeout).  
-With `cbor2>=5.8.0`, decoder stream reads became buffered and can request large chunks (`read(4096)`). Jade replies are much smaller, so `read(4096)` blocks until timeout and signing appears frozen.
+With `cbor2==5.8.0`, decoder stream reads can request large chunks (`read(4096)`). Jade replies are much smaller, so `read(4096)` blocks until timeout and signing appears frozen.
+
+The matrix also tests `cbor2==5.9.0` because it is the security-patched version downstreams want to use. On the local Jade run captured in `results.md`, stock HWI 3.2.0 passed with `cbor2==5.9.0`; keep this matrix in place to verify behavior on other hosts, Python versions, and Jade firmware.
 
 Tracking issue: https://github.com/bitcoin-core/HWI/issues/817
 
@@ -23,7 +36,7 @@ Issue #817 was closed with a workaround (pin `cbor2==5.7.1`). That is no longer 
 - GHSA-3c37-wwvx-h642 (high-severity DoS in `cbor2.loads`)
 - First patched in `cbor2>=5.9.0`
 
-So downstreams that need secure `cbor2` lose Jade unless HWI is fixed.
+So downstreams should not rely on `cbor2==5.7.1` as a long-term workaround. Validate against `cbor2>=5.9.0`, and keep the Jade read path robust against buffered decoder reads.
 
 ## 3) Run the matrix (Jade attached)
 
@@ -63,7 +76,7 @@ Preview only:
 - Entry point: `patch.apply()`
 - It monkey-patches `hwilib.devices.jadepy.jade.JadeInterface.read`
 
-Behavior: for large read requests, it reads only bytes already buffered (if known), otherwise falls back to requesting 1 byte to avoid long blocking on transports with pyserial-like semantics.
+Behavior: for buffered read requests (`>=4096` bytes), it reads only bytes already buffered (if known), otherwise falls back to requesting 1 byte to avoid long blocking on transports with pyserial-like semantics. Smaller protocol-sized reads keep exact-length behavior.
 
 ## 5) How an HWI maintainer can adopt it upstream
 

@@ -74,6 +74,32 @@ install_hwi() {
   fi
 }
 
+run_repro() {
+  local venv="$1"
+  local mode="$2"
+  local limit=45
+  local elapsed=0
+  local pid
+
+  PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python "$venv/bin/python" "$ROOT/repro.py" --$mode &
+  pid=$!
+
+  while kill -0 "$pid" >/dev/null 2>&1; do
+    if (( elapsed >= limit )); then
+      echo "FROZEN process-timeout"
+      kill "$pid" >/dev/null 2>&1 || true
+      sleep 1
+      kill -9 "$pid" >/dev/null 2>&1 || true
+      wait "$pid" >/dev/null 2>&1 || true
+      return 2
+    fi
+    sleep 1
+    elapsed=$((elapsed + 1))
+  done
+
+  wait "$pid"
+}
+
 for v in "${CBOR_VERSIONS[@]}"; do
   for m in "${MODES[@]}"; do
     venv="$ROOT/.venv-matrix-${v//./_}-${m}"
@@ -85,23 +111,33 @@ for v in "${CBOR_VERSIONS[@]}"; do
     set +e
     {
       install_hwi "$venv" "$v"
-      PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python "$venv/bin/python" "$ROOT/repro.py" --$m
+      run_repro "$venv" "$m"
     } >"$log" 2>&1
     code=$?
     set -e
 
     output="$(cat "$log")"
     cell="ERROR"
+    detail=""
     if grep -q "FROZEN" <<<"$output"; then
       cell="FROZEN"
     elif [[ $code -eq 10 || $code -eq 11 ]]; then
       cell="SKIP"
+      if [[ $code -eq 10 ]]; then
+        detail="NO_JADE"
+      else
+        detail="JADE_LOCKED"
+      fi
     elif [[ $code -eq 0 ]]; then
       cell="PASS"
     fi
 
     RESULT["$m,$v"]="$cell"
-    printf "[%s cbor2=%s] %s (log: %s)\n" "$m" "$v" "$cell" "$log"
+    if [[ -n "$detail" ]]; then
+      printf "[%s cbor2=%s] %s/%s (log: %s)\n" "$m" "$v" "$cell" "$detail" "$log"
+    else
+      printf "[%s cbor2=%s] %s (log: %s)\n" "$m" "$v" "$cell" "$log"
+    fi
     if [[ "$cell" == "ERROR" ]]; then
       echo "--- ERROR tail ($m, $v) ---"
       tail -n 40 "$log"
@@ -121,4 +157,4 @@ done
 
 echo
 echo "Logs saved under: $LOG_DIR"
-echo "Legend: PASS=completed signtx, FROZEN=timeout, SKIP=no Jade or Jade locked"
+echo "Legend: PASS=completed signtx, FROZEN=timeout, SKIP/NO_JADE=no Jade, SKIP/JADE_LOCKED=Jade locked"

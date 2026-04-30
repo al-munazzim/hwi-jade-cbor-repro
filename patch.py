@@ -40,7 +40,7 @@ def apply() -> None:
         want = max(1, int(n))
 
         # Preserve exact semantics for normal protocol-sized reads.
-        if want >= 256:
+        if want >= 4096:
             available = _available_now(self.impl)
             if isinstance(available, int) and available > 0:
                 want = min(want, available)
