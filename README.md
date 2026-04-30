@@ -2,6 +2,17 @@
 
 Minimal testbed for the HWI Jade regression observed with `cbor2==5.8.0`, plus a candidate patch suitable for upstream HWI.
 
+## Latest captured result
+
+Run against HWI 3.2.0 on macOS 15.4.1 with an unlocked temporary Jade signer:
+
+| mode \ cbor2 | 5.7.1 | 5.8.0 | 5.9.0 |
+|---|---|---|---|
+| stock | PASS | FROZEN | PASS |
+| patched | PASS | PASS | PASS |
+
+Full raw output and environment notes are in `results.md`.
+
 ## 1) The bug
 
 In HWI 3.2.0, `hwilib/devices/jadepy/jade.py` has:
