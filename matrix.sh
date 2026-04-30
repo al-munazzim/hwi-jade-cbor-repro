@@ -62,8 +62,13 @@ install_hwi() {
 
   PIP_IGNORE_REQUIRES_PYTHON=1 "$venv/bin/pip" install --no-deps "$src" >/dev/null
   "$venv/bin/pip" install \
-    "cbor2==$cbor_ver" \
     ecdsa hidapi libusb1 mnemonic noiseprotocol "protobuf<5" pyaes semver typing-extensions pyserial >/dev/null
+
+  if ! "$venv/bin/pip" install "cbor2==$cbor_ver" >/dev/null 2>&1; then
+    echo "cbor2==$cbor_ver build backend missing; installing poetry backends and retrying" >&2
+    "$venv/bin/pip" install "poetry<2" poetry-core >/dev/null
+    "$venv/bin/pip" install "cbor2==$cbor_ver" >/dev/null
+  fi
 }
 
 for v in "${CBOR_VERSIONS[@]}"; do

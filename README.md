@@ -46,6 +46,8 @@ On Python 3.14, HWI transitive deps (notably protobuf stack used by BitBox modul
 
 Per-cell output is saved under `matrix-logs/` and each line prints the log path. On `ERROR`, `matrix.sh` also prints a tail of the failing log.
 
+For platforms where `cbor2==5.8.0` may build from sdist, `matrix.sh` retries install after adding `poetry`/`poetry-core` build backends automatically.
+
 Preview only:
 
 ```bash
