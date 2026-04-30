@@ -89,3 +89,15 @@ def test_patched_small_reads_keep_exact_length_behavior():
 
     assert out == b""
     assert elapsed >= 0.14
+
+
+def test_patched_protocol_sized_reads_keep_exact_length_behavior():
+    patch.apply()
+    iface = _make_interface(b"x" * 27)
+
+    start = time.monotonic()
+    out = iface.read(336)
+    elapsed = time.monotonic() - start
+
+    assert out == b""
+    assert elapsed >= 0.14
