@@ -51,23 +51,26 @@ install_hwi() {
   local venv="$1"
   local cbor_ver="$2"
 
-  if "$venv/bin/pip" install "hwi==3.2.0" "cbor2==$cbor_ver" >/dev/null 2>&1; then
-    return 0
+  # Prefer wheel install for HWI itself.
+  if ! "$venv/bin/pip" install "hwi==3.2.0" >/dev/null 2>&1; then
+    echo "hwi==3.2.0 wheel unavailable for this Python; falling back to source install" >&2
+    local src="$ROOT/.hwi-src"
+    rm -rf "$src"
+    git -c advice.detachedHead=false clone --depth 1 --branch 3.2.0 https://github.com/bitcoin-core/HWI.git "$src" >/dev/null
+
+    # HWI 3.2.0 source build uses poetry backend.
+    "$venv/bin/pip" install "poetry<2" poetry-core >/dev/null
+    PIP_IGNORE_REQUIRES_PYTHON=1 "$venv/bin/pip" install --no-deps "$src" >/dev/null
+
+    "$venv/bin/pip" install \
+      ecdsa hidapi libusb1 mnemonic noiseprotocol "protobuf<5" pyaes semver typing-extensions pyserial >/dev/null
   fi
 
-  echo "hwi==3.2.0 wheel unavailable for this Python; falling back to source install" >&2
-  local src="$ROOT/.hwi-src"
-  rm -rf "$src"
-  git -c advice.detachedHead=false clone --depth 1 --branch 3.2.0 https://github.com/bitcoin-core/HWI.git "$src" >/dev/null
-
-  PIP_IGNORE_REQUIRES_PYTHON=1 "$venv/bin/pip" install --no-deps "$src" >/dev/null
-  "$venv/bin/pip" install \
-    ecdsa hidapi libusb1 mnemonic noiseprotocol "protobuf<5" pyaes semver typing-extensions pyserial >/dev/null
-
-  if ! "$venv/bin/pip" install "cbor2==$cbor_ver" >/dev/null 2>&1; then
+  # Force target cbor2 version after HWI install.
+  if ! "$venv/bin/pip" install --no-deps "cbor2==$cbor_ver" >/dev/null 2>&1; then
     echo "cbor2==$cbor_ver build backend missing; installing poetry backends and retrying" >&2
     "$venv/bin/pip" install "poetry<2" poetry-core >/dev/null
-    "$venv/bin/pip" install "cbor2==$cbor_ver" >/dev/null
+    "$venv/bin/pip" install --no-deps "cbor2==$cbor_ver" >/dev/null
   fi
 }
 
