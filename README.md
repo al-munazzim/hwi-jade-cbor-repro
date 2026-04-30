@@ -37,9 +37,12 @@ This runs `repro.py` across:
 - cbor2: `5.7.1`, `5.8.0`, `5.9.0`
 - modes: `stock`, `patched`
 
-If Jade is present but locked, `repro.py` prints `JADE LOCKED; exiting ...` and exits 0 so the harness stays runnable while you unlock and retry.
+If no Jade is present, `repro.py` prints `NO JADE; exiting` and exits with code `10`.
+If Jade is present but locked, `repro.py` prints `JADE LOCKED; exiting ...` and exits with code `11`.
+`matrix.sh` maps both to `SKIP` (not `PASS`).
 
 It creates fresh per-cell virtualenvs and tries to install `hwi==3.2.0` + `cbor2==<version>`.
+For matrix status, `PASS` now means the run reached and completed the signing path (`signtx`).
 If the wheel is unavailable for your Python (for example Python 3.13), it automatically falls back to installing HWI 3.2.0 from source in that venv, then runs the repro and prints a 2x3 PASS/FROZEN/ERROR markdown table.
 
 On Python 3.14, HWI transitive deps (notably protobuf stack used by BitBox modules) are currently incompatible, so `matrix.sh` now auto-selects an installed Python in the supported range (`3.9`-`3.12`) and exits with a clear error if none is available.

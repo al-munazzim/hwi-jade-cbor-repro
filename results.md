@@ -15,6 +15,8 @@ Paste output from `./matrix.sh` below.
 | stock |  |  |  |
 | patched |  |  |  |
 
+Legend: PASS = completed `signtx`; FROZEN = timeout; SKIP = no Jade or Jade locked.
+
 ## Raw output
 
 ```text

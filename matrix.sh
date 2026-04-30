@@ -94,6 +94,8 @@ for v in "${CBOR_VERSIONS[@]}"; do
     cell="ERROR"
     if grep -q "FROZEN" <<<"$output"; then
       cell="FROZEN"
+    elif [[ $code -eq 10 || $code -eq 11 ]]; then
+      cell="SKIP"
     elif [[ $code -eq 0 ]]; then
       cell="PASS"
     fi
@@ -119,3 +121,4 @@ done
 
 echo
 echo "Logs saved under: $LOG_DIR"
+echo "Legend: PASS=completed signtx, FROZEN=timeout, SKIP=no Jade or Jade locked"

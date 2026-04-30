@@ -69,13 +69,13 @@ def main() -> int:
     jade = next((d for d in devices if d.get("type") == "jade"), None)
     if not jade:
         print("NO JADE; exiting")
-        return 0
+        return 10
 
     try:
         client = commands.get_client(jade["type"], jade["path"])
     except DeviceNotReadyError as exc:
         print(f"JADE LOCKED; exiting ({exc})")
-        return 0
+        return 11
     if client is None:
         print("ERROR could not open Jade client")
         return 1
